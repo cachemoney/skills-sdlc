@@ -38,7 +38,8 @@ Then implemented with
 
 * /implement
 
-This orcestrates planning, implementing, and reviewing. If you install the agents in this repo, it will use them to switch between opus for planning and review and Sonnet for implementation.
+This orcestrates planning, implementing, reviewing, and verification.
+If you install the agents in this repo, it will use them to switch between different models for planning (expensive) and implementation (cheaper).
 
 
 ## Docs
@@ -105,12 +106,20 @@ You may not always go through the full flow. Sometimes the bug seems very simple
 ### Differences
 
 The main difference between this repo and using mattpocock/skills directly is
+* an implementation plan
+* reviews at every step
+* /verify instead of /tdd
 
 #### Implement with a plan
 
 The override of /implement adds the concept of an Implementation Plan. The spec created by mattpocock/skills is intentionally not very detailed since details can change.
 An Implementation Plan is detailed, and is generated at the start of the implementation. This can be done in plan mode by a smarter agent (Opus/Fable).
 After the plan is approved a more efficient agent (Sonnet) can take over.
+
+### Verifications
+
+/verify replaces /tdd. This skill focuses on test quality rather than test first.
+Although testing has great evidence behind it, TDD as the best way to do this does not.
 
 ### Model selection
 
