@@ -48,6 +48,7 @@ description: "Verify software by intentional testing."
    * important tests added or changed
    * stronger testing techniques used
    * remaining risks or under tested areas
+   * Manual verifications or automated tests not ran on the CI must document how they were ran (pointing to other docs is good) and their result.
 
 
 # Test writing Process

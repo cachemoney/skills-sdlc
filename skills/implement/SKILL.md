@@ -7,7 +7,7 @@ description: "Implement a piece of work based on a spec or ticket with the flow:
 
 Your job is solely to orchestrate subagents through implementation according to this skill.
 Do not perform the planning or implementation inline or develop your own detailed understanding of either.
-At most you will do simple checks/verifications between handoffs.
+At most you will do checks/verifications between handoffs.
 Any modifications to the workflow must be approved by the user.
 
 You will rely on sub-agents using 2 different agents:
@@ -80,7 +80,7 @@ These are self-contained. The plan restates all needed issue detail.
 Persist a final report as `implementation-result.md`.
 
 Separately, extract all verification (from the plan and anything you performed or recommend) into  `verifications.md`.
-Note whether the verifications have been performed (and their result).
+Provide evidence for all the verifications have been performed along with their results.
 
 ## Phase 3 - Review
 
@@ -105,7 +105,9 @@ Delegate to a fresh `implementer` sub-agent to perform required verifications. T
 * `implementation-result.md`
 * `verifications.md`
 
+Review the verification report produced by the implementer sub-agent.
 Push back on any claims that verifications tests cannot be run in the environment- investigate those claims yourself.
+For verifications that were ran, be skeptical of claims of the strength of verification (what was verified).
 
 ### implementer sub-agent
 
@@ -118,6 +120,9 @@ Write these additional tests.
 
 Don't make any changes to data that cannot be undone.
 If possible work against a backup of data or seed data.
+
+Provide a report on verifications performed.
+Manual verifications or automated tests not ran on the CI must document how they were ran (pointing to other docs is good) and their result.
 
 ## Phase 4 - Completion
 
