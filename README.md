@@ -1,14 +1,8 @@
 ## Overview
 
-These skills increase project and Agent code quality producing much fewer defects and a much stronger code base.
-
-This changes how you spend time developing software. Effectively you are acting as a technical lead.
-Rather than coding your time is focused on:
-
-* Understanding the project needs
-* Developing specs
-* Ensuring a rigorous engineering process
-* Code review (but much less time then you would normally spend reviewing AI code)
+Provide a structured workflow for agents.
+Agents produce amazing prototypes.
+A SDLC process is designed to produce quality production code.
 
 This is achieved by:
 * outlining a workflow that emphasizes specing, planning, testing, verification, and architecture/design
@@ -21,7 +15,7 @@ Downsides:
 For a sustained non-prototype code base you should save on time and costs due to
 * Fewer defects
 * A more agile code base (future changes are less costly to make)
-* Freeing up your own time
+* Freeing up your own time (you move from being a coder to a technical lead)
 
 
 ## Workflow
