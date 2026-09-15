@@ -8,6 +8,11 @@ LOCAL_SKILLS_DIR="$REPOSITORY_ROOT/skills"
 UPSTREAM_SKILLS_DIR="$REPOSITORY_ROOT/vendor/mattpocock/skills"
 UPSTREAM_SKILLS_DIR_EXPLICIT=false
 INSTALL_DIR="${HOME}/.agent/skills"
+ANTIGRAVITY_SKILLS_DIR="${HOME}/.gemini/config/skills"
+ANTIGRAVITY_SKILLS_DIR_EXPLICIT=false
+ANTIGRAVITY_CLI_SKILLS_DIR="${HOME}/.gemini/antigravity-cli/skills"
+OPENCODE_SKILLS_DIR="${HOME}/.config/opencode/skills"
+OPENCODE_SKILLS_DIR_EXPLICIT=false
 SCAN_DIR="$REPOSITORY_ROOT"
 FORCE=false
 DRY_RUN=false
@@ -18,7 +23,9 @@ Usage: ./scripts/install-skills.sh [options]
 
 Symlink this repository's skill overrides and the referenced Matt Pocock skills
 from its pinned submodule into ~/.agent/skills. If ~/.claude already exists,
-install matching links into its ~/.claude/skills directory too.
+install matching links into its ~/.claude/skills directory too. If ~/.gemini/config
+exists, install links into ~/.gemini/config/skills (and ~/.gemini/antigravity-cli/skills
+if present). If ~/.config/opencode exists, install links into ~/.config/opencode/skills.
 
 Options:
   --force                       Back up and replace destination conflicts.
@@ -27,6 +34,8 @@ Options:
   --upstream-skills-dir DIR     Override the Matt Pocock skill source directory.
   --install-dir DIR             Override ~/.agent/skills (useful for testing).
   --scan-dir DIR                Override the documentation and skill scan root.
+  --antigravity-skills-dir DIR  Override ~/.gemini/config/skills.
+  --opencode-skills-dir DIR     Override ~/.config/opencode/skills.
   -h, --help                    Show this help text.
 
 The production upstream source is vendor/mattpocock/skills. Initialize it with:
@@ -72,6 +81,18 @@ while [ "$#" -gt 0 ]; do
     --scan-dir)
       [ "$#" -ge 2 ] || die "--scan-dir requires a directory"
       SCAN_DIR="$2"
+      shift
+      ;;
+    --antigravity-skills-dir)
+      [ "$#" -ge 2 ] || die "--antigravity-skills-dir requires a directory"
+      ANTIGRAVITY_SKILLS_DIR="$2"
+      ANTIGRAVITY_SKILLS_DIR_EXPLICIT=true
+      shift
+      ;;
+    --opencode-skills-dir)
+      [ "$#" -ge 2 ] || die "--opencode-skills-dir requires a directory"
+      OPENCODE_SKILLS_DIR="$2"
+      OPENCODE_SKILLS_DIR_EXPLICIT=true
       shift
       ;;
     -h|--help)
@@ -130,7 +151,10 @@ is_local_skill() {
   return 1
 }
 
-mapfile -t referenced_commands < <(
+referenced_commands=()
+while IFS= read -r line || [ -n "$line" ]; do
+  [ -n "$line" ] && referenced_commands+=("$line")
+done < <(
   find "$SCAN_DIR" \
     -path '*/.git' -prune -o \
     -path "$REPOSITORY_ROOT/vendor/mattpocock" -prune -o \
@@ -142,11 +166,13 @@ mapfile -t referenced_commands < <(
 )
 
 dependencies=()
-for command in "${referenced_commands[@]}"; do
-  if is_mattpocock_skill "$command" && ! is_local_skill "$command"; then
-    dependencies+=("$command")
-  fi
-done
+if [ "${#referenced_commands[@]}" -gt 0 ]; then
+  for command in "${referenced_commands[@]}"; do
+    if is_mattpocock_skill "$command" && ! is_local_skill "$command"; then
+      dependencies+=("$command")
+    fi
+  done
+fi
 
 resolve_mattpocock_skill_dir() {
   local name="$1"
@@ -172,16 +198,18 @@ resolve_mattpocock_skill_dir() {
 dependency_sources=()
 missing_dependencies=()
 ambiguous_dependencies=()
-for dependency in "${dependencies[@]}"; do
-  if source=$(resolve_mattpocock_skill_dir "$dependency"); then
-    dependency_sources+=("$source")
-  else
-    case "$?" in
-      1) missing_dependencies+=("$dependency") ;;
-      2) ambiguous_dependencies+=("$dependency") ;;
-    esac
-  fi
-done
+if [ "${#dependencies[@]}" -gt 0 ]; then
+  for dependency in "${dependencies[@]}"; do
+    if source=$(resolve_mattpocock_skill_dir "$dependency"); then
+      dependency_sources+=("$source")
+    else
+      case "$?" in
+        1) missing_dependencies+=("$dependency") ;;
+        2) ambiguous_dependencies+=("$dependency") ;;
+      esac
+    fi
+  done
+fi
 
 if [ "${#missing_dependencies[@]}" -gt 0 ]; then
   printf 'Missing Matt Pocock skills: %s\n' "${missing_dependencies[*]}" >&2
@@ -221,10 +249,12 @@ link_all_skills() {
     source="$(absolute_dir "$LOCAL_SKILLS_DIR/$name")"
     link_skill "$destination" "$source"
   done
-  for index in "${!dependencies[@]}"; do
-    source="$(absolute_dir "${dependency_sources[$index]}")"
-    link_skill "$destination" "$source"
-  done
+  if [ "${#dependencies[@]}" -gt 0 ]; then
+    for index in "${!dependencies[@]}"; do
+      source="$(absolute_dir "${dependency_sources[$index]}")"
+      link_skill "$destination" "$source"
+    done
+  fi
 }
 
 link_all_skills "$INSTALL_DIR"
@@ -236,6 +266,23 @@ if [ -d "$CLAUDE_DIR" ]; then
   # ~/.agent/skills. They need not resolve to the same directory: link the
   # required individual skills in either layout and preserve the user's root.
   link_all_skills "$CLAUDE_SKILLS_DIR"
+fi
+
+GEMINI_CONFIG_DIR="${HOME}/.gemini/config"
+if "$ANTIGRAVITY_SKILLS_DIR_EXPLICIT"; then
+  link_all_skills "$ANTIGRAVITY_SKILLS_DIR"
+else
+  if [ -d "$GEMINI_CONFIG_DIR" ]; then
+    link_all_skills "$ANTIGRAVITY_SKILLS_DIR"
+  fi
+  if [ -d "$ANTIGRAVITY_CLI_SKILLS_DIR" ]; then
+    link_all_skills "$ANTIGRAVITY_CLI_SKILLS_DIR"
+  fi
+fi
+
+OPENCODE_DIR="${HOME}/.config/opencode"
+if "$OPENCODE_SKILLS_DIR_EXPLICIT" || [ -d "$OPENCODE_DIR" ]; then
+  link_all_skills "$OPENCODE_SKILLS_DIR"
 fi
 
 echo "Installed skill links in $INSTALL_DIR"
