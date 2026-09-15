@@ -1,21 +1,19 @@
 ## Overview
 
-Provide a structured workflow for agents.
 Agents produce amazing prototypes.
 A SDLC process is designed to produce quality production code.
+Here we provide skills to structure agent workflows and produce high quality code.
 
 This is achieved by:
 * outlining a workflow that emphasizes specing, planning, testing, verification, and architecture/design
 * agent reviews at every stage
 
-Downsides:
-* Increased time for AI to implement a change
-* Similarly, a higher cost
+The downside is increased time and cost for AI to implement a change.
 
 For a sustained non-prototype code base you should save on time and costs due to
 * Fewer defects
+* You spend less time productionizing agent code
 * A more agile code base (future changes are less costly to make)
-* Freeing up your own time (you move from being a coder to a technical lead)
 
 
 ## Workflow
@@ -27,14 +25,17 @@ Find work -> Spec with a grilling session -> create Tickets -> Implement a ticke
 Workflows are started by you, normally with a frontier model using these skills:
 
 * /grill-with-docs (new feature or enhancement)
-  * /improve-codebase-architecture (cleanup your slop, goes into a grilling session)
+* /improve-codebase-architecture (cleanup your slop, goes into a grilling session)
 * /diagnosing-bugs
 
 Next work can then be broken down into slices and published with:
 
 * /tickets (/github-tickets for Github users)
 
-Then implemented with
+The process of slicing up work into separate tickets strictly speaking isn't necessary.
+However, the right size work items will keep context sizes from bloating to help agents perform better.
+
+Then implement changes with
 
 * /implement
 
@@ -120,8 +121,11 @@ After the plan is approved a more efficient agent (Sonnet) can take over.
 
 ### Verifications
 
-/verify replaces /tdd. This skill focuses on test quality rather than test first.
-Although testing has great evidence behind it, TDD as the best way to do this does not.
+/verify replaces /tdd
+
+`/verify` focuses on test quality rather than quantity.
+Testing has great evidence behind it in human software engineering.
+However, without proper guidance on how to test, the LLM [tests do not necesssarily equate to better code](https://arxiv.org/abs/2602.07900).
 
 ### Model selection
 
