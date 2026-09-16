@@ -3,8 +3,13 @@
 set -euo pipefail
 
 REPOSITORY_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+if [ -d /private/tmp ]; then
+  TEMP_PARENT=/private/tmp
+else
+  TEMP_PARENT="${TMPDIR:-/tmp}"
+fi
 INSTALLER="$REPOSITORY_ROOT/scripts/install-skills.sh"
-TEMP_ROOT=$(mktemp -d /private/tmp/skills-sdlc-install-skills.XXXXXX)
+TEMP_ROOT=$(mktemp -d "$TEMP_PARENT/skills-sdlc-install-skills.XXXXXX")
 trap 'rm -rf "$TEMP_ROOT"' EXIT
 
 fail() {

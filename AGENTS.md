@@ -29,6 +29,11 @@ If the /github-app skill is availble and configured:
 - Use a direct-write repository script for temporary Markdown bodies.
 - Do not use `apply_patch` for temporary files; reserve it for repository edits.
 
+## Harness Delegation and Execution
+
+- **Antigravity CLI**: Discover global skills from `~/.gemini/config/skills` and agents from `~/.gemini/config/agents` (or project `.agents/{skills,agents}`). Orchestrate subagents using `invoke_subagent`.
+- **OpenCode CLI**: Discover global skills from `~/.config/opencode/skills` and agents from `~/.config/opencode/agents` (or project `.opencode/agents`). Orchestrate subagents using the `task` tool without `task_id` for clean-context child sessions.
+
 ## Shell command execution
 
 Run approved repository scripts directly- do not prefix these commands with zsh -lc, env, PATH=..., or similar wrappers unless the command cannot run directly. Only use `/bin/zsh -lc` when shell syntax, environment assignment, or a multi-command pipeline is strictly required.

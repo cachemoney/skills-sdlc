@@ -78,6 +78,8 @@ update initialized submodules to their recorded gitlinks before reinstalling if
 necessary. A plain pull can leave the upstream checkout old or missing.
 
 When `~/.claude` exists, matching links are also installed in `~/.claude/skills`.
+When `~/.gemini/config` exists, matching links are installed in `~/.gemini/config/skills` (and `~/.gemini/antigravity-cli/skills` if present).
+When `~/.config/opencode` exists, matching links are installed in `~/.config/opencode/skills`.
 
 Install the repository's agent definitions with:
 
@@ -90,6 +92,10 @@ into `~/.codex/agents`. Both destination directories are created as needed;
 Overwriting is refused by default: use `--force` to overwrite with a timestamped adjacent backup.
 When `~/.pi` exists, `.pi/agent/agents/*.{md,toml}` is also linked into
 `~/.pi/agent/agents`.
+When `~/.gemini` exists, `.antigravity/agents/*.md` is linked into
+`~/.gemini/config/agents`.
+When `~/.config/opencode` exists, `.opencode/agents/*.md` is linked into
+`~/.config/opencode/agents`.
 
 Generate a project's `CODING_STANDARDS.md` from this repository's
 [standards/](./standards) documents with:
@@ -115,8 +121,8 @@ The main difference between this repo and using mattpocock/skills directly is
 #### Implement with a plan
 
 The override of /implement adds the concept of an Implementation Plan. The spec created by mattpocock/skills is intentionally not very detailed since details can change.
-An Implementation Plan is detailed, and is generated at the start of the implementation. This can be done in plan mode by a smarter agent (Opus/Fable).
-After the plan is approved a more efficient agent (Sonnet) can take over.
+An Implementation Plan is detailed, and is generated at the start of the implementation. This can be done in plan mode by a smarter agent (Opus/Fable/Pro).
+After the plan is approved a more efficient agent (Sonnet/Flash) can take over.
 
 ### Verifications
 
@@ -126,8 +132,11 @@ Although testing has great evidence behind it, TDD as the best way to do this do
 ### Model selection
 
 An `implementer` agent is included that actually writes the code.
-This agent uses Sonnet (with Claude).
-A `planner` agent uses Opus.
+A `planner` agent produces the plan and architecture.
+
+- **Claude**: `planner` uses Opus; `implementer` uses Sonnet.
+- **Antigravity CLI**: `planner` uses `model: pro`; `implementer` uses `model: inherit`.
+- **OpenCode CLI**: `planner` and `implementer` inherit the active model and provider configured in `~/.config/opencode/opencode.json`.
 
 If you have a very simple task that you want to oversee, you can just use /plan.
 In claude, With permission `defaultMode` is separately set to `plan` and 
