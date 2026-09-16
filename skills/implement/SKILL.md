@@ -15,14 +15,19 @@ The `planner` agent is smarter and more costly and produces the design.
 The `implementer` agent implements the plan and is designed to lower costs.
 The sub-agents can ask you to interact with the user if needed.
 
-Artifacts are passed between sub-agents so they start with a summary of all useful information from other sub-agents: this minimizes re-exploration. Create a task-scoped temporary directory outside the repository. Do not commit its contents. Pass absolute artifact paths between agents.
+Artifacts are passed between sub-agents so they start with a summary of all useful information from other sub-agents: this minimizes re-exploration. Create a task-scoped temporary directory (e.g., in `.tmp/` or outside the repository). Do not commit its contents. Pass absolute artifact paths between agents.
 Agents should edit artifacts incrementally- that way if an agent's session ends prematurely more information is persisted.
 
-Start every planner, reviewer, and implementer delegation without inherited
-conversation history. In Codex use `fork_turns="none"`; use the equivalent
-empty-context option on other platforms. Give the delegate only its requested
-action and the artifact or source paths it needs. Do not paste the conversation
-transcript into the delegation prompt.
+Start every planner, reviewer, and implementer delegation without inherited conversation history. Give the delegate only its requested action and the artifact or source paths it needs. Do not paste the conversation transcript into the delegation prompt.
+
+## Harness Delegation Matrix
+
+| Harness | Delegation Mechanism | Context Isolation / Settings | Artifact Passing |
+| --- | --- | --- | --- |
+| **Antigravity** (`agy`) | Call `invoke_subagent` | Set `TypeName: "planner"` or `"implementer"`, `Workspace: "inherit"` | Include absolute file paths to artifacts in `Prompt` |
+| **OpenCode** (`opencode`) | Call `task` tool | Set `subagent_type: "planner"` or `"implementer"`; omit `task_id` for clean context | Pass artifact file paths in `prompt` |
+| **Codex** | Delegate subagent | Set `fork_turns="none"` | Pass artifact paths in prompt |
+| **Claude** | Delegate subagent | Fresh subagent session | Pass artifact paths in prompt |
 
 This skill uses other skills. If a skill is missing, stop and ask the user to install it.
 
