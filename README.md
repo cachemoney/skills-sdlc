@@ -42,6 +42,20 @@ This orcestrates planning, implementing, reviewing, and verification.
 If you install the agents in this repo, it will use them to switch between different models for planning (expensive) and implementation (cheaper).
 
 
+## Supported Harnesses
+
+Skills and the `planner`/`implementer` agent definitions install to five harnesses. Optional harnesses (Pi, Antigravity, OpenCode) are only targeted when their config directory already exists.
+
+| Harness | Skills | Agents | Planner | Implementer |
+| :--- | :--- | :--- | :--- | :--- |
+| Claude Code | `~/.agent/skills`, `~/.claude/skills` | `~/.claude/agents` | Opus | Sonnet |
+| Codex | `~/.agent/skills` | `~/.codex/agents` | gpt-5.6-sol | gpt-5.6-terra |
+| Pi | `~/.agent/skills` | `~/.pi/agent/agents` | configured in harness | configured in harness |
+| Antigravity CLI | `~/.gemini/config/skills` | `~/.gemini/config/agents` | `model: pro` | `model: inherit` |
+| OpenCode | `~/.config/opencode/skills` | `~/.config/opencode/agents` | inherited | inherited |
+
+See [docs/harnesses.md](./docs/harnesses.md) for agent schemas, how `/implement` delegates per harness, and the design decisions behind multi-harness support.
+
 ## Docs
 
 See [CONTRIBUTING.md](./CONTRIBUTING.md) for how to test changes to this repo.
