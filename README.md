@@ -42,6 +42,8 @@ Then implement changes with
 This orcestrates planning, implementing, reviewing, and verification.
 If you install the agents in this repo, it will use them to switch between different models for planning (expensive) and implementation (cheaper).
 
+`/implement` also runs AFK (away from keyboard): declare the run unattended at kickoff and the flow defaults through ambiguity, logs every assumption to `assumptions.md`, bounds its retry loops, and ends in an open PR for review- it never merges. The OpenCode, Pi, and Antigravity `implementer` agents carry the mode-aware clause for it. See the AFK Mode section in [skills/implement/SKILL.md](./skills/implement/SKILL.md).
+
 
 ## Supported Harnesses
 
@@ -138,6 +140,18 @@ The main difference between this repo and using mattpocock/skills directly is
 The override of /implement adds the concept of an Implementation Plan. The spec created by mattpocock/skills is intentionally not very detailed since details can change.
 An Implementation Plan is detailed, and is generated at the start of the implementation. This can be done in plan mode by a smarter agent (Opus/Fable/Pro).
 After the plan is approved a more efficient agent (Sonnet/Flash) can take over.
+
+### AFK runs
+
+/implement can run AFK (away from keyboard): you declare the run unattended at kickoff and leave it. The flow then
+* carries the unattended mode into every sub-agent delegation
+* defaults through safe, reversible ambiguity and logs each default to `assumptions.md`
+* aborts to a reviewable state (artifacts persisted, PR open- never merged) on a closed list of conditions: work contradicts the spec, no safe default exists, a retry loop exceeds its bound, or a required skill/delegation is unavailable
+* bounds every retry loop (plan revision, verification, review followup) at 2 cycles
+
+Launch the session with a permissive permission mode and sandboxing before going AFK; the skill never requests escalations mid-run.
+The OpenCode, Pi, and Antigravity `implementer` agents are mode-aware; Claude and Codex follow the base ask-first default.
+See [skills/implement/SKILL.md](./skills/implement/SKILL.md) for the full contract.
 
 ### Verifications
 

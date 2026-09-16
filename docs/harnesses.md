@@ -44,6 +44,15 @@ delegation mechanism per harness:
 | Codex | Delegate subagent | `fork_turns="none"` | Artifact paths in prompt |
 | Antigravity CLI | `invoke_subagent` | `TypeName: "planner"` / `"implementer"`, `Workspace: "inherit"` | Absolute artifact paths in `Prompt` |
 | OpenCode | `task` tool | `subagent_type: "planner"` / `"implementer"`; omit `task_id` for a clean-context child session | Artifact paths in `prompt` |
+| Pi | `subagent` tool | `agent: "planner"` / `"implementer"`, `agentScope: "both"` for project-local agents | Artifact paths in `task` |
+
+On Pi the `subagent` tool comes from the official subagent extension example
+(`packages/coding-agent/examples/extensions/subagent` in `badlogic/pi-mono`),
+not from core `pi`; install it before relying on `/implement` delegation.
+
+`/implement` also runs AFK (unattended) when the user says so at kickoff; see the
+AFK Mode section in `skills/implement/SKILL.md`. The OpenCode, Pi, and
+Antigravity `implementer` agents carry the mode-aware clause for it.
 
 Agent definition schemas per harness:
 

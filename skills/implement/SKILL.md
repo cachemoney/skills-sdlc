@@ -26,10 +26,27 @@ Start every planner, reviewer, and implementer delegation without inherited conv
 | --- | --- | --- | --- |
 | **Antigravity** (`agy`) | Call `invoke_subagent` | Set `TypeName: "planner"` or `"implementer"`, `Workspace: "inherit"` | Include absolute file paths to artifacts in `Prompt` |
 | **OpenCode** (`opencode`) | Call `task` tool | Set `subagent_type: "planner"` or `"implementer"`; omit `task_id` for clean context | Pass artifact file paths in `prompt` |
+| **Pi** (`pi`) | Call `subagent` tool | Set `agent: "planner"` or `"implementer"`, `task: "..."`; `agentScope: "both"` to include project-local agents in `.pi/agent/agents` | Pass artifact file paths in `task` |
 | **Codex** | Delegate subagent | Set `fork_turns="none"` | Pass artifact paths in prompt |
 | **Claude** | Delegate subagent | Fresh subagent session | Pass artifact paths in prompt |
 
 This skill uses other skills. If a skill is missing, stop and ask the user to install it.
+
+# AFK Mode
+
+AFK (away from keyboard) is a property of the session, not the skill: the user kicks off `/implement` and leaves the agent to run unattended. A run is AFK when the user says so at kickoff (e.g. "run this AFK" / "unattended"). When AFK:
+
+* **Carry the mode into every delegation**: each planner/implementer/reviewer delegation prompt states that this is an unattended run, so sub-agents default through ambiguity instead of asking the user.
+* **Default and log**: when a sub-agent faces ambiguity with two plausible readings and one is safe/reversible, it picks the safer reading, continues, and appends the assumption to `assumptions.md` (one line: decision, rationale, revert cost). Every sub-agent's final report includes an "Assumptions made" section; the orchestrator merges these into `assumptions.md`.
+* **Abort to a reviewable state**: an AFK run never asks the user mid-flow. It ends the run with artifacts persisted and a PR open; the user resolves the block in review.
+* **Bound every loop at 2 cycles**: plan revision, verification retry, review followup. After 2 cycles of the same loop, abort to a reviewable state with `assumptions.md` recording what blocked progress.
+* **Permissions**: AFK requires the session to have been launched with a permissive permission mode and sandboxing. The skill assumes this and never requests escalations mid-run.
+
+Abort conditions (a closed list, everything else defaults):
+* The work seems *wrong*- contradicts the spec or plan.
+* The ambiguity admits no safe default (irreversible/destructive action, missing credentials, scope expansion).
+* A loop exceeds its bound.
+* A required delegation or skill is unavailable (the normal stop points of this flow).
 
 # Flow
 
@@ -54,6 +71,7 @@ planning and ask the user for an implementer/model handoff (the /handoff skill m
 
 If the implementer stops due to a plan issue, have the planner sub-agent review the plan issue and revise the plan accordingly.
 Then restart **Phase 2 - Plan execution** with the revised implementation plan. The first step will be to review any existing implementation changes and make sure it satisfies with the newly revised plan. If a change does not, delete or overwrite the change.
+In AFK mode this loop is bounded at 2 plan-revision cycles; after that, abort to a reviewable state (see AFK Mode).
 
 ### implementer sub-agent prompt
 
@@ -83,6 +101,7 @@ These are self-contained. The plan restates all needed issue detail.
 #### Output
 
 Persist a final report as `implementation-result.md`.
+In an unattended (AFK) run, include an "Assumptions made" section (see AFK Mode).
 
 Separately, extract all verification (from the plan and anything you performed or recommend) into  `verifications.md`.
 Provide evidence for all the verifications have been performed along with their results.
@@ -132,8 +151,10 @@ Manual verifications or automated tests not ran on the CI must document how they
 ## Phase 4 - Completion
 
 Do the following if your instructions authorize/direct it and the capability is available.
+In AFK mode these are always authorized: this is the mode's end state- the run ends in something reviewable.
 * Commit your work. Reference relevant issues/tickets in your commit message.
-* Generate a PR
-* Watch for CI success
+* Push the branch and generate a PR. Never merge it; never force-push. Review happens when the user returns.
+* Watch for CI success if the `/github-actions-ci` skill is available; on failure, one fix-and-retry cycle, then report CI status in the PR.
+* In AFK mode, attach or link `assumptions.md` so the reviewer sees every default the run made.
 
 Use the `/document-changes` skill to record your changes.
