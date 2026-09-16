@@ -85,7 +85,7 @@ These are self-contained. The plan restates all needed issue detail.
 #### How to work
 
 - Follow the plan's step-by-step sequence.
-- Stay strictly within this ticket's scope.
+- Stay strictly within this ticket's scope. For out of scope bugs, suggest creating a ticket.
 - Use `/verify` to verify code as it is written.
 - Read repo documentation (INSERT SPECIFIC DOCS) for conventions before editing code.
 - Perform a `/code-review` of your own code changes but without any sub-agents. Your inputs are the spec and your working changes are the fixed point.
@@ -158,3 +158,6 @@ In AFK mode these are always authorized: this is the mode's end state- the run e
 * In AFK mode, attach or link `assumptions.md` so the reviewer sees every default the run made.
 
 Use the `/document-changes` skill to record your changes.
+
+For out of scope defects seen during implementation, file a bug report.
+For any new features/enhancements brought up during implementation, ask the user about them.
