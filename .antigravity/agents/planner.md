@@ -2,7 +2,6 @@
 name: planner
 description: Produces an implementation plan to handoff to an implementer. Also usable as an architect.
 subagent: true
-mainAgent: true
 model: pro
 tools:
   - view_file
