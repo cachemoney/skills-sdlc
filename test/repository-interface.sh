@@ -199,24 +199,40 @@ fi
 
 run_inline_fixtures
 
+SKILLS_INSTALLER="$REPOSITORY_ROOT/scripts/install-skills.sh"
+AGENTS_INSTALLER="$REPOSITORY_ROOT/scripts/install-agents.sh"
+STANDARDS_INSTALLER="$REPOSITORY_ROOT/scripts/install-standards.sh"
+
 assert_json '.model' 'opusplan'
 assert_json '.permissions.defaultMode' 'plan'
 
 assert_executable "$GITHUB_DISPATCHER"
 assert_executable "$CI_CHECKER"
+assert_executable "$SKILLS_INSTALLER"
+assert_executable "$AGENTS_INSTALLER"
+assert_executable "$STANDARDS_INSTALLER"
 assert_absent "$REPOSITORY_ROOT/scripts/check-ci-runs.sh"
 assert_readable "$REPOSITORY_ROOT/./skills/github-app/scripts/gh-app-token.sh"
 
 for tracked_path in \
   ./skills/implementation-plan/SKILL.md \
-  ./skills/implement/SKILL.md ; do
+  ./skills/implement/SKILL.md \
+  ./scripts/install-skills.sh \
+  ./scripts/install-agents.sh \
+  ./scripts/install-standards.sh \
+  ./.antigravity/agents/planner.md \
+  ./.antigravity/agents/implementer.md \
+  ./.opencode/agents/planner.md \
+  ./.opencode/agents/implementer.md ; do
   assert_tracked "$tracked_path"
 done
 
 assert_contains ./skills/implement/SKILL.md 'fork_turns="none"'
+assert_contains ./skills/implement/SKILL.md 'invoke_subagent'
 assert_contains ./skills/implement/SKILL.md 'task-brief.md'
 assert_contains ./skills/implement/SKILL.md 'implementation-plan.md'
 assert_contains ./skills/implement/SKILL.md 'implementation-result.md'
+assert_contains ./skills/implement/SKILL.md 'Harness Delegation Matrix'
 # This assertion intentionally searches for the literal skill-directory expression.
 # shellcheck disable=SC2016
 assert_contains ./skills/github-actions-ci/SKILL.md \
@@ -291,6 +307,9 @@ done
 
 assert_help "$GITHUB_DISPATCHER"
 assert_help "$CI_CHECKER"
+assert_help "$SKILLS_INSTALLER"
+assert_help "$AGENTS_INSTALLER"
+assert_help "$STANDARDS_INSTALLER"
 for command_name in \
   push \
   pr-create \
