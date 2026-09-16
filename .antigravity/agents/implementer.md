@@ -2,7 +2,6 @@
 name: implementer
 description: "Implementer. Implement code, preferably from a plan."
 subagent: true
-mainAgent: true
 model: inherit
 tools:
   - view_file
