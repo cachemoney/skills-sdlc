@@ -6,11 +6,19 @@ REPOSITORY_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 CLAUDE_SOURCE_DIR="$REPOSITORY_ROOT/agents"
 CODEX_SOURCE_DIR="$REPOSITORY_ROOT/.codex/agents"
 PI_SOURCE_DIR="$REPOSITORY_ROOT/.pi/agent/agents"
+ANTIGRAVITY_SOURCE_DIR="$REPOSITORY_ROOT/.antigravity/agents"
+OPENCODE_SOURCE_DIR="$REPOSITORY_ROOT/.opencode/agents"
 CLAUDE_INSTALL_DIR="${HOME}/.claude/agents"
 CODEX_INSTALL_DIR="${HOME}/.codex/agents"
 PI_INSTALL_DIR="${HOME}/.pi/agent/agents"
+ANTIGRAVITY_INSTALL_DIR="${HOME}/.gemini/config/agents"
+OPENCODE_INSTALL_DIR="${HOME}/.config/opencode/agents"
 PI_HOME="${HOME}/.pi"
 PI_INSTALL_DIR_EXPLICIT=false
+ANTIGRAVITY_HOME="${HOME}/.gemini"
+ANTIGRAVITY_INSTALL_DIR_EXPLICIT=false
+OPENCODE_HOME="${HOME}/.config/opencode"
+OPENCODE_INSTALL_DIR_EXPLICIT=false
 FORCE=false
 DRY_RUN=false
 
@@ -18,9 +26,11 @@ usage() {
   cat <<'EOF'
 Usage: ./scripts/install-agents.sh [options]
 
-Symlink this repository's Claude, Codex, and Pi agent definitions into their
-respective user agent directories. Pi agents are only installed when ~/.pi
-already exists, unless --pi-install-dir is given explicitly.
+Symlink this repository's Claude, Codex, Pi, Antigravity, and OpenCode agent
+definitions into their respective user agent directories. Optional harnesses
+(Pi, Antigravity, OpenCode) are only installed when their configuration
+directories (~/.pi, ~/.gemini, ~/.config/opencode) already exist, unless their
+install directories are given explicitly.
 
 Options:
   --dry-run                    Print planned filesystem operations without changing anything.
@@ -28,9 +38,13 @@ Options:
   --claude-source-dir DIR      Override agents/.
   --codex-source-dir DIR       Override .codex/agents/.
   --pi-source-dir DIR          Override .pi/agent/agents/.
+  --antigravity-source-dir DIR Override .antigravity/agents/.
+  --opencode-source-dir DIR    Override .opencode/agents/.
   --claude-install-dir DIR     Override ~/.claude/agents/.
   --codex-install-dir DIR      Override ~/.codex/agents/.
   --pi-install-dir DIR         Override ~/.pi/agent/agents/ and force Pi installation.
+  --antigravity-install-dir DIR Override ~/.gemini/config/agents/ and force Antigravity installation.
+  --opencode-install-dir DIR   Override ~/.config/opencode/agents/ and force OpenCode installation.
   -h, --help                   Print this help text.
 EOF
 }
@@ -69,6 +83,16 @@ while [ "$#" -gt 0 ]; do
       PI_SOURCE_DIR="$2"
       shift
       ;;
+    --antigravity-source-dir)
+      [ "$#" -ge 2 ] || die '--antigravity-source-dir requires a directory'
+      ANTIGRAVITY_SOURCE_DIR="$2"
+      shift
+      ;;
+    --opencode-source-dir)
+      [ "$#" -ge 2 ] || die '--opencode-source-dir requires a directory'
+      OPENCODE_SOURCE_DIR="$2"
+      shift
+      ;;
     --claude-install-dir)
       [ "$#" -ge 2 ] || die '--claude-install-dir requires a directory'
       CLAUDE_INSTALL_DIR="$2"
@@ -83,6 +107,18 @@ while [ "$#" -gt 0 ]; do
       [ "$#" -ge 2 ] || die '--pi-install-dir requires a directory'
       PI_INSTALL_DIR="$2"
       PI_INSTALL_DIR_EXPLICIT=true
+      shift
+      ;;
+    --antigravity-install-dir)
+      [ "$#" -ge 2 ] || die '--antigravity-install-dir requires a directory'
+      ANTIGRAVITY_INSTALL_DIR="$2"
+      ANTIGRAVITY_INSTALL_DIR_EXPLICIT=true
+      shift
+      ;;
+    --opencode-install-dir)
+      [ "$#" -ge 2 ] || die '--opencode-install-dir requires a directory'
+      OPENCODE_INSTALL_DIR="$2"
+      OPENCODE_INSTALL_DIR_EXPLICIT=true
       shift
       ;;
     -h|--help)
@@ -160,13 +196,32 @@ if "$PI_INSTALL_DIR_EXPLICIT" || [ -d "$PI_HOME" ]; then
   install_pi=true
 fi
 
+install_antigravity=false
+if "$ANTIGRAVITY_INSTALL_DIR_EXPLICIT" || [ -d "$ANTIGRAVITY_HOME" ]; then
+  install_antigravity=true
+fi
+
+install_opencode=false
+if "$OPENCODE_INSTALL_DIR_EXPLICIT" || [ -d "$OPENCODE_HOME" ]; then
+  install_opencode=true
+fi
+
 declare -a claude_agents=()
 declare -a codex_agents=()
 declare -a pi_agents=()
+declare -a antigravity_agents=()
+declare -a opencode_agents=()
+
 discover_agents "$CLAUDE_SOURCE_DIR" md Claude claude_agents
 discover_agents "$CODEX_SOURCE_DIR" toml Codex codex_agents
 if "$install_pi"; then
   discover_agents "$PI_SOURCE_DIR" 'md toml' Pi pi_agents
+fi
+if "$install_antigravity"; then
+  discover_agents "$ANTIGRAVITY_SOURCE_DIR" md Antigravity antigravity_agents
+fi
+if "$install_opencode"; then
+  discover_agents "$OPENCODE_SOURCE_DIR" md OpenCode opencode_agents
 fi
 
 for source in "${claude_agents[@]}"; do
@@ -178,6 +233,16 @@ done
 if "$install_pi"; then
   for source in "${pi_agents[@]}"; do
     preflight_target "$source" "$PI_INSTALL_DIR/$(basename "$source")"
+  done
+fi
+if "$install_antigravity"; then
+  for source in "${antigravity_agents[@]}"; do
+    preflight_target "$source" "$ANTIGRAVITY_INSTALL_DIR/$(basename "$source")"
+  done
+fi
+if "$install_opencode"; then
+  for source in "${opencode_agents[@]}"; do
+    preflight_target "$source" "$OPENCODE_INSTALL_DIR/$(basename "$source")"
   done
 fi
 
@@ -199,6 +264,26 @@ if "$install_pi"; then
   installed_dirs+=("$PI_INSTALL_DIR")
 else
   echo "Skipping Pi agents: $PI_HOME does not exist" >&2
+fi
+
+if "$install_antigravity"; then
+  run mkdir -p "$ANTIGRAVITY_INSTALL_DIR"
+  for source in "${antigravity_agents[@]}"; do
+    install_agent "$source" "$ANTIGRAVITY_INSTALL_DIR"
+  done
+  installed_dirs+=("$ANTIGRAVITY_INSTALL_DIR")
+else
+  echo "Skipping Antigravity agents: $ANTIGRAVITY_HOME does not exist" >&2
+fi
+
+if "$install_opencode"; then
+  run mkdir -p "$OPENCODE_INSTALL_DIR"
+  for source in "${opencode_agents[@]}"; do
+    install_agent "$source" "$OPENCODE_INSTALL_DIR"
+  done
+  installed_dirs+=("$OPENCODE_INSTALL_DIR")
+else
+  echo "Skipping OpenCode agents: $OPENCODE_HOME does not exist" >&2
 fi
 
 destinations="${installed_dirs[0]}"

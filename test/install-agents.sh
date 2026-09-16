@@ -3,8 +3,13 @@
 set -euo pipefail
 
 REPOSITORY_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+if [ -d /private/tmp ]; then
+  TEMP_PARENT=/private/tmp
+else
+  TEMP_PARENT="${TMPDIR:-/tmp}"
+fi
 INSTALLER="$REPOSITORY_ROOT/scripts/install-agents.sh"
-TEMP_ROOT=$(mktemp -d /private/tmp/skills-sdlc-install-agents.XXXXXX)
+TEMP_ROOT=$(mktemp -d "$TEMP_PARENT/skills-sdlc-install-agents.XXXXXX")
 trap 'rm -rf "$TEMP_ROOT"' EXIT
 
 fail() {
@@ -38,9 +43,11 @@ HOME="$TEMP_ROOT/home"
 CLAUDE_SOURCE="$TEMP_ROOT/claude source"
 CODEX_SOURCE="$TEMP_ROOT/codex source"
 PI_SOURCE="$TEMP_ROOT/pi source"
+ANTIGRAVITY_SOURCE="$TEMP_ROOT/antigravity source"
+OPENCODE_SOURCE="$TEMP_ROOT/opencode source"
 CLAUDE_INSTALL="$HOME/.claude/agents"
 CODEX_INSTALL="$HOME/.codex/agents"
-mkdir -p "$HOME" "$CLAUDE_SOURCE/nested" "$CODEX_SOURCE/nested" "$PI_SOURCE/nested"
+mkdir -p "$HOME" "$CLAUDE_SOURCE/nested" "$CODEX_SOURCE/nested" "$PI_SOURCE/nested" "$ANTIGRAVITY_SOURCE/nested" "$OPENCODE_SOURCE/nested"
 printf 'claude one\n' >"$CLAUDE_SOURCE/one.md"
 printf 'claude two\n' >"$CLAUDE_SOURCE/two.md"
 printf 'ignored\n' >"$CLAUDE_SOURCE/wrong.toml"
@@ -53,10 +60,20 @@ printf 'pi one\n' >"$PI_SOURCE/one.md"
 printf 'pi two\n' >"$PI_SOURCE/two.toml"
 printf 'ignored\n' >"$PI_SOURCE/wrong.txt"
 printf 'nested\n' >"$PI_SOURCE/nested/hidden.md"
+printf 'antigravity one\n' >"$ANTIGRAVITY_SOURCE/one.md"
+printf 'antigravity two\n' >"$ANTIGRAVITY_SOURCE/two.md"
+printf 'ignored\n' >"$ANTIGRAVITY_SOURCE/wrong.toml"
+printf 'nested\n' >"$ANTIGRAVITY_SOURCE/nested/hidden.md"
+printf 'opencode one\n' >"$OPENCODE_SOURCE/one.md"
+printf 'opencode two\n' >"$OPENCODE_SOURCE/two.md"
+printf 'ignored\n' >"$OPENCODE_SOURCE/wrong.toml"
+printf 'nested\n' >"$OPENCODE_SOURCE/nested/hidden.md"
 
 "$INSTALLER" --help >"$TEMP_ROOT/help"
 for option in --dry-run --force --claude-source-dir --codex-source-dir --pi-source-dir \
-  --claude-install-dir --codex-install-dir --pi-install-dir -h --help; do
+  --antigravity-source-dir --opencode-source-dir \
+  --claude-install-dir --codex-install-dir --pi-install-dir \
+  --antigravity-install-dir --opencode-install-dir -h --help; do
   assert_output "$TEMP_ROOT/help" "$option"
 done
 assert_absent "$CLAUDE_INSTALL"
@@ -86,30 +103,51 @@ fi
 GATE_HOME="$TEMP_ROOT/gate home"
 mkdir -p "$GATE_HOME"
 HOME="$GATE_HOME" "$INSTALLER" \
-  --claude-source-dir "$CLAUDE_SOURCE" --codex-source-dir "$CODEX_SOURCE" --pi-source-dir "$PI_SOURCE" \
+  --claude-source-dir "$CLAUDE_SOURCE" --codex-source-dir "$CODEX_SOURCE" \
+  --pi-source-dir "$PI_SOURCE" --antigravity-source-dir "$ANTIGRAVITY_SOURCE" --opencode-source-dir "$OPENCODE_SOURCE" \
   --claude-install-dir "$GATE_HOME/.claude/agents" --codex-install-dir "$GATE_HOME/.codex/agents" \
   >"$TEMP_ROOT/gate-off-output" 2>&1
 assert_absent "$GATE_HOME/.pi"
+assert_absent "$GATE_HOME/.gemini"
+assert_absent "$GATE_HOME/.config/opencode"
 assert_output "$TEMP_ROOT/gate-off-output" 'Skipping Pi agents'
+assert_output "$TEMP_ROOT/gate-off-output" 'Skipping Antigravity agents'
+assert_output "$TEMP_ROOT/gate-off-output" 'Skipping OpenCode agents'
 
-mkdir -p "$GATE_HOME/.pi"
+mkdir -p "$GATE_HOME/.pi" "$GATE_HOME/.gemini" "$GATE_HOME/.config/opencode"
 HOME="$GATE_HOME" "$INSTALLER" \
-  --claude-source-dir "$CLAUDE_SOURCE" --codex-source-dir "$CODEX_SOURCE" --pi-source-dir "$PI_SOURCE" \
+  --claude-source-dir "$CLAUDE_SOURCE" --codex-source-dir "$CODEX_SOURCE" \
+  --pi-source-dir "$PI_SOURCE" --antigravity-source-dir "$ANTIGRAVITY_SOURCE" --opencode-source-dir "$OPENCODE_SOURCE" \
   --claude-install-dir "$GATE_HOME/.claude/agents" --codex-install-dir "$GATE_HOME/.codex/agents"
 assert_link_to "$GATE_HOME/.pi/agent/agents/one.md" "$PI_SOURCE/one.md"
 assert_link_to "$GATE_HOME/.pi/agent/agents/two.toml" "$PI_SOURCE/two.toml"
 assert_absent "$GATE_HOME/.pi/agent/agents/wrong.txt"
 assert_absent "$GATE_HOME/.pi/agent/agents/hidden.md"
+assert_link_to "$GATE_HOME/.gemini/config/agents/one.md" "$ANTIGRAVITY_SOURCE/one.md"
+assert_link_to "$GATE_HOME/.gemini/config/agents/two.md" "$ANTIGRAVITY_SOURCE/two.md"
+assert_absent "$GATE_HOME/.gemini/config/agents/wrong.toml"
+assert_absent "$GATE_HOME/.gemini/config/agents/hidden.md"
+assert_link_to "$GATE_HOME/.config/opencode/agents/one.md" "$OPENCODE_SOURCE/one.md"
+assert_link_to "$GATE_HOME/.config/opencode/agents/two.md" "$OPENCODE_SOURCE/two.md"
+assert_absent "$GATE_HOME/.config/opencode/agents/wrong.toml"
+assert_absent "$GATE_HOME/.config/opencode/agents/hidden.md"
 
 OVERRIDE_HOME="$TEMP_ROOT/override home"
 OVERRIDE_PI="$TEMP_ROOT/override pi"
+OVERRIDE_AGY="$TEMP_ROOT/override agy"
+OVERRIDE_OPENCODE="$TEMP_ROOT/override opencode"
 mkdir -p "$OVERRIDE_HOME"
 HOME="$OVERRIDE_HOME" "$INSTALLER" \
-  --claude-source-dir "$CLAUDE_SOURCE" --codex-source-dir "$CODEX_SOURCE" --pi-source-dir "$PI_SOURCE" \
+  --claude-source-dir "$CLAUDE_SOURCE" --codex-source-dir "$CODEX_SOURCE" \
+  --pi-source-dir "$PI_SOURCE" --antigravity-source-dir "$ANTIGRAVITY_SOURCE" --opencode-source-dir "$OPENCODE_SOURCE" \
   --claude-install-dir "$OVERRIDE_HOME/.claude/agents" --codex-install-dir "$OVERRIDE_HOME/.codex/agents" \
-  --pi-install-dir "$OVERRIDE_PI"
+  --pi-install-dir "$OVERRIDE_PI" --antigravity-install-dir "$OVERRIDE_AGY" --opencode-install-dir "$OVERRIDE_OPENCODE"
 assert_absent "$OVERRIDE_HOME/.pi"
+assert_absent "$OVERRIDE_HOME/.gemini"
+assert_absent "$OVERRIDE_HOME/.config/opencode"
 assert_link_to "$OVERRIDE_PI/one.md" "$PI_SOURCE/one.md"
+assert_link_to "$OVERRIDE_AGY/one.md" "$ANTIGRAVITY_SOURCE/one.md"
+assert_link_to "$OVERRIDE_OPENCODE/one.md" "$OPENCODE_SOURCE/one.md"
 
 SYMLINK_ROOT="$TEMP_ROOT/linked claude agents"
 SYMLINK_TARGET="$TEMP_ROOT/linked target"
@@ -134,39 +172,68 @@ assert_output "$TEMP_ROOT/output" 'install-agents: refusing to replace existing 
 assert_file_content "$PREFLIGHT_CLAUDE/one.md" 'keep me'
 assert_absent "$PREFLIGHT_CODEX"
 
+PREFLIGHT_AGY="$TEMP_ROOT/preflight agy"
+mkdir -p "$PREFLIGHT_AGY"
+printf 'keep agy\n' >"$PREFLIGHT_AGY/one.md"
+assert_failure env HOME="$HOME" "$INSTALLER" \
+  --claude-source-dir "$CLAUDE_SOURCE" --codex-source-dir "$CODEX_SOURCE" --antigravity-source-dir "$ANTIGRAVITY_SOURCE" \
+  --claude-install-dir "$CLAUDE_INSTALL" --codex-install-dir "$CODEX_INSTALL" --antigravity-install-dir "$PREFLIGHT_AGY"
+assert_output "$TEMP_ROOT/output" 'install-agents: refusing to replace existing agent link'
+assert_file_content "$PREFLIGHT_AGY/one.md" 'keep agy'
+
 FORCE_CLAUDE="$TEMP_ROOT/force claude"
 FORCE_CODEX="$TEMP_ROOT/force codex"
 FORCE_PI="$TEMP_ROOT/force pi"
-mkdir -p "$FORCE_CLAUDE" "$FORCE_CODEX" "$FORCE_PI"
+FORCE_AGY="$TEMP_ROOT/force agy"
+FORCE_OPENCODE="$TEMP_ROOT/force opencode"
+mkdir -p "$FORCE_CLAUDE" "$FORCE_CODEX" "$FORCE_PI" "$FORCE_AGY" "$FORCE_OPENCODE"
 printf 'first original\n' >"$FORCE_CLAUDE/one.md"
 OTHER_TARGET="$TEMP_ROOT/other.toml"
 printf 'other\n' >"$OTHER_TARGET"
 ln -s "$OTHER_TARGET" "$FORCE_CODEX/one.toml"
 printf 'pi first original\n' >"$FORCE_PI/one.md"
+printf 'agy first original\n' >"$FORCE_AGY/one.md"
+printf 'opencode first original\n' >"$FORCE_OPENCODE/one.md"
 HOME="$HOME" "$INSTALLER" --force \
   --claude-source-dir "$CLAUDE_SOURCE" --codex-source-dir "$CODEX_SOURCE" --pi-source-dir "$PI_SOURCE" \
-  --claude-install-dir "$FORCE_CLAUDE" --codex-install-dir "$FORCE_CODEX" --pi-install-dir "$FORCE_PI"
+  --antigravity-source-dir "$ANTIGRAVITY_SOURCE" --opencode-source-dir "$OPENCODE_SOURCE" \
+  --claude-install-dir "$FORCE_CLAUDE" --codex-install-dir "$FORCE_CODEX" --pi-install-dir "$FORCE_PI" \
+  --antigravity-install-dir "$FORCE_AGY" --opencode-install-dir "$FORCE_OPENCODE"
 assert_link_to "$FORCE_CLAUDE/one.md" "$CLAUDE_SOURCE/one.md"
 assert_link_to "$FORCE_CODEX/one.toml" "$CODEX_SOURCE/one.toml"
 assert_link_to "$FORCE_PI/one.md" "$PI_SOURCE/one.md"
+assert_link_to "$FORCE_AGY/one.md" "$ANTIGRAVITY_SOURCE/one.md"
+assert_link_to "$FORCE_OPENCODE/one.md" "$OPENCODE_SOURCE/one.md"
 mapfile -t claude_backups < <(compgen -G "$FORCE_CLAUDE/one.md.backup.*")
 mapfile -t codex_backups < <(compgen -G "$FORCE_CODEX/one.toml.backup.*")
 mapfile -t pi_backups < <(compgen -G "$FORCE_PI/one.md.backup.*")
+mapfile -t agy_backups < <(compgen -G "$FORCE_AGY/one.md.backup.*")
+mapfile -t opencode_backups < <(compgen -G "$FORCE_OPENCODE/one.md.backup.*")
 [ "${#claude_backups[@]}" -eq 1 ] || fail 'expected Claude backup'
 [ "${#codex_backups[@]}" -eq 1 ] || fail 'expected Codex backup'
 [ "${#pi_backups[@]}" -eq 1 ] || fail 'expected Pi backup'
+[ "${#agy_backups[@]}" -eq 1 ] || fail 'expected Antigravity backup'
+[ "${#opencode_backups[@]}" -eq 1 ] || fail 'expected OpenCode backup'
 assert_file_content "${claude_backups[0]}" 'first original'
 assert_link_to "${codex_backups[0]}" "$OTHER_TARGET"
 assert_file_content "${pi_backups[0]}" 'pi first original'
+assert_file_content "${agy_backups[0]}" 'agy first original'
+assert_file_content "${opencode_backups[0]}" 'opencode first original'
 mv "$FORCE_CLAUDE/one.md" "$TEMP_ROOT/displaced correct Claude link"
 printf 'second original\n' >"$FORCE_CLAUDE/one.md"
 HOME="$HOME" "$INSTALLER" --force \
   --claude-source-dir "$CLAUDE_SOURCE" --codex-source-dir "$CODEX_SOURCE" --pi-source-dir "$PI_SOURCE" \
-  --claude-install-dir "$FORCE_CLAUDE" --codex-install-dir "$FORCE_CODEX" --pi-install-dir "$FORCE_PI"
+  --antigravity-source-dir "$ANTIGRAVITY_SOURCE" --opencode-source-dir "$OPENCODE_SOURCE" \
+  --claude-install-dir "$FORCE_CLAUDE" --codex-install-dir "$FORCE_CODEX" --pi-install-dir "$FORCE_PI" \
+  --antigravity-install-dir "$FORCE_AGY" --opencode-install-dir "$FORCE_OPENCODE"
 mapfile -t claude_backups < <(compgen -G "$FORCE_CLAUDE/one.md.backup.*")
 mapfile -t pi_backups < <(compgen -G "$FORCE_PI/one.md.backup.*")
+mapfile -t agy_backups < <(compgen -G "$FORCE_AGY/one.md.backup.*")
+mapfile -t opencode_backups < <(compgen -G "$FORCE_OPENCODE/one.md.backup.*")
 [ "${#claude_backups[@]}" -eq 2 ] || fail 'expected distinct Claude backups'
 [ "${#pi_backups[@]}" -eq 1 ] || fail 'idempotent Pi install created a backup'
+[ "${#agy_backups[@]}" -eq 1 ] || fail 'idempotent Antigravity install created a backup'
+[ "${#opencode_backups[@]}" -eq 1 ] || fail 'idempotent OpenCode install created a backup'
 for backup in "${claude_backups[@]}"; do
   [ "$(<"$backup")" = 'first original' ] || [ "$(<"$backup")" = 'second original' ] || fail 'backup content was lost'
 done
@@ -174,20 +241,28 @@ done
 DRY_CLAUDE="$TEMP_ROOT/dry claude"
 DRY_CODEX="$TEMP_ROOT/dry codex"
 DRY_PI="$TEMP_ROOT/dry pi"
+DRY_AGY="$TEMP_ROOT/dry agy"
+DRY_OPENCODE="$TEMP_ROOT/dry opencode"
 HOME="$HOME" "$INSTALLER" --dry-run \
   --claude-source-dir "$CLAUDE_SOURCE" --codex-source-dir "$CODEX_SOURCE" --pi-source-dir "$PI_SOURCE" \
+  --antigravity-source-dir "$ANTIGRAVITY_SOURCE" --opencode-source-dir "$OPENCODE_SOURCE" \
   --claude-install-dir "$DRY_CLAUDE" --codex-install-dir "$DRY_CODEX" --pi-install-dir "$DRY_PI" \
+  --antigravity-install-dir "$DRY_AGY" --opencode-install-dir "$DRY_OPENCODE" \
   >"$TEMP_ROOT/dry-output"
 assert_output "$TEMP_ROOT/dry-output" 'mkdir -p'
 assert_output "$TEMP_ROOT/dry-output" 'ln -s'
 assert_absent "$DRY_CLAUDE"
 assert_absent "$DRY_CODEX"
 assert_absent "$DRY_PI"
-mkdir -p "$DRY_CLAUDE" "$DRY_CODEX" "$DRY_PI"
+assert_absent "$DRY_AGY"
+assert_absent "$DRY_OPENCODE"
+mkdir -p "$DRY_CLAUDE" "$DRY_CODEX" "$DRY_PI" "$DRY_AGY" "$DRY_OPENCODE"
 printf 'dry conflict\n' >"$DRY_CLAUDE/one.md"
 HOME="$HOME" "$INSTALLER" --dry-run --force \
   --claude-source-dir "$CLAUDE_SOURCE" --codex-source-dir "$CODEX_SOURCE" --pi-source-dir "$PI_SOURCE" \
+  --antigravity-source-dir "$ANTIGRAVITY_SOURCE" --opencode-source-dir "$OPENCODE_SOURCE" \
   --claude-install-dir "$DRY_CLAUDE" --codex-install-dir "$DRY_CODEX" --pi-install-dir "$DRY_PI" \
+  --antigravity-install-dir "$DRY_AGY" --opencode-install-dir "$DRY_OPENCODE" \
   >"$TEMP_ROOT/dry-force-output"
 assert_output "$TEMP_ROOT/dry-force-output" 'mv'
 assert_output "$TEMP_ROOT/dry-force-output" 'ln -s'
@@ -223,10 +298,30 @@ assert_absent "$TEMP_ROOT/empty pi result claude"
 assert_absent "$TEMP_ROOT/empty pi result codex"
 assert_absent "$TEMP_ROOT/empty pi result pi"
 
+EMPTY_AGY="$TEMP_ROOT/empty agy"
+mkdir -p "$EMPTY_AGY"
+assert_failure env HOME="$HOME" "$INSTALLER" --claude-source-dir "$CLAUDE_SOURCE" \
+  --codex-source-dir "$CODEX_SOURCE" --antigravity-source-dir "$EMPTY_AGY" \
+  --claude-install-dir "$TEMP_ROOT/empty agy result claude" \
+  --codex-install-dir "$TEMP_ROOT/empty agy result codex" \
+  --antigravity-install-dir "$TEMP_ROOT/empty agy result agy"
+assert_output "$TEMP_ROOT/output" 'no Antigravity .md agent files found'
+
+EMPTY_OPENCODE="$TEMP_ROOT/empty opencode"
+mkdir -p "$EMPTY_OPENCODE"
+assert_failure env HOME="$HOME" "$INSTALLER" --claude-source-dir "$CLAUDE_SOURCE" \
+  --codex-source-dir "$CODEX_SOURCE" --opencode-source-dir "$EMPTY_OPENCODE" \
+  --claude-install-dir "$TEMP_ROOT/empty opencode result claude" \
+  --codex-install-dir "$TEMP_ROOT/empty opencode result codex" \
+  --opencode-install-dir "$TEMP_ROOT/empty opencode result opencode"
+assert_output "$TEMP_ROOT/output" 'no OpenCode .md agent files found'
+
 assert_failure "$INSTALLER" --unknown
 assert_output "$TEMP_ROOT/output" 'install-agents: unknown option: --unknown'
 for option in --claude-source-dir --codex-source-dir --pi-source-dir \
-  --claude-install-dir --codex-install-dir --pi-install-dir; do
+  --antigravity-source-dir --opencode-source-dir \
+  --claude-install-dir --codex-install-dir --pi-install-dir \
+  --antigravity-install-dir --opencode-install-dir; do
   assert_failure "$INSTALLER" "$option"
   assert_output "$TEMP_ROOT/output" "install-agents: $option requires a directory"
 done
